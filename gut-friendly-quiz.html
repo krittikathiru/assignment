@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Is My Diet Gut-Friendly? Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: #f5f7f2; color: #1a1a1a; min-height: 100vh; padding: 2rem 1rem; }
+  .container { max-width: 640px; margin: 0 auto; }
+  h1 { font-size: 1.6rem; font-weight: 600; color: #1a3d2b; margin-bottom: 0.25rem; }
+  .subtitle { font-size: 0.9rem; color: #5a7a65; margin-bottom: 1.75rem; }
+  .progress-wrap { margin-bottom: 1.5rem; }
+  .progress-meta { display: flex; justify-content: space-between; font-size: 0.8rem; color: #5a7a65; margin-bottom: 6px; }
+  .bar-bg { background: #e8f2ec; border-radius: 999px; height: 8px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 999px; background: #2d9e6b; transition: width 0.4s ease; }
+  .quiz-card { background: #fff; border-radius: 20px; padding: 1.75rem; border: 1px solid #e2ede6; margin-bottom: 1.25rem; }
+  .q-text { font-size: 1.1rem; font-weight: 500; color: #1a3d2b; margin-bottom: 1.25rem; line-height: 1.55; }
+  .options { display: flex; flex-direction: column; gap: 9px; }
+  .option { background: #f9fcfa; border: 1.5px solid #d4e6da; border-radius: 12px; padding: 11px 15px; text-align: left; font-size: 0.9rem; color: #1a1a1a; cursor: pointer; font-family: inherit; transition: all 0.15s; line-height: 1.4; }
+  .option:hover { border-color: #4db882; background: #f0f9f3; }
+  .option.selected { border-color: #2d9e6b; background: #e4f5ec; color: #1a3d2b; font-weight: 500; }
+  .btn-next { background: #1a3d2b; color: #fff; border: none; border-radius: 12px; padding: 11px 28px; font-size: 0.95rem; cursor: pointer; font-family: inherit; transition: background 0.2s; }
+  .btn-next:hover:not(:disabled) { background: #2d9e6b; }
+  .btn-next:disabled { opacity: 0.35; cursor: default; }
+  .result-card { background: #fff; border-radius: 20px; padding: 2rem; border: 1px solid #e2ede6; display: none; }
+  .result-badge { display: inline-block; padding: 5px 16px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; margin-bottom: 1rem; letter-spacing: 0.02em; }
+  .badge-rookie { background: #faece7; color: #4a1b0c; }
+  .badge-intermediate { background: #faeeda; color: #412402; }
+  .badge-champion { background: #e4f5ec; color: #04342c; }
+  .result-title { font-size: 1.5rem; font-weight: 600; color: #1a3d2b; margin-bottom: 0.5rem; }
+  .result-sub { font-size: 0.9rem; color: #5a7a65; line-height: 1.65; margin-bottom: 1.5rem; }
+  .score-line { font-size: 0.85rem; color: #5a7a65; margin-bottom: 1rem; }
+  .score-line strong { color: #1a3d2b; }
+  .tips-title { font-size: 0.75rem; font-weight: 600; color: #2d9e6b; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.75rem; }
+  .tips-list { list-style: none; margin-bottom: 1.5rem; }
+  .tips-list li { display: flex; gap: 10px; font-size: 0.88rem; color: #1a1a1a; padding: 9px 0; border-bottom: 1px solid #e8f2ec; line-height: 1.55; }
+  .tips-list li:last-child { border-bottom: none; }
+  .tip-dot { color: #2d9e6b; font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+  .btn-retry { background: none; border: 1.5px solid #c8dcd0; border-radius: 12px; padding: 9px 20px; font-size: 0.88rem; cursor: pointer; color: #1a1a1a; font-family: inherit; transition: background 0.15s; }
+  .btn-retry:hover { background: #f0f9f3; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🥦 Is My Diet Gut-Friendly?</h1>
+  <p class="subtitle">Answer 10 quick questions to find out your gut health diet score — and get personalised tips to improve.</p>
+
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-meta">
+      <span id="qCounter">Question 1 of 10</span>
+      <span id="qPct">0%</span>
+    </div>
+    <div class="bar-bg"><div class="bar-fill" id="barFill" style="width:0%"></div></div>
+  </div>
+
+  <div class="quiz-card" id="quizCard">
+    <div class="q-text" id="qText"></div>
+    <div class="options" id="optionsContainer"></div>
+  </div>
+
+  <button class="btn-next" id="btnNext" disabled onclick="next()">Next →</button>
+
+  <div class="result-card" id="resultCard"></div>
+</div>
+
+<script>
+const questions = [
+  { text: "How many serves of vegetables do you eat per day?", options: ["0–1 serves", "2–3 serves", "4–5 serves", "5+ serves"], scores: [0, 1, 2, 3] },
+  { text: "How often do you eat wholegrains (e.g. oats, brown rice, wholegrain bread, quinoa)?", options: ["Rarely or never", "1–2 times a week", "Most days", "Every day"], scores: [0, 1, 2, 3] },
+  { text: "How often do you eat legumes or pulses (e.g. lentils, chickpeas, beans, edamame)?", options: ["Rarely or never", "Once a week", "2–3 times a week", "4+ times a week"], scores: [0, 1, 2, 3] },
+  { text: "Do you eat fermented foods (e.g. yoghurt, kefir, kimchi, sauerkraut, kombucha, miso)?", options: ["Never", "Occasionally", "A few times a week", "Daily"], scores: [0, 1, 2, 3] },
+  { text: "How often do you eat ultra-processed foods (e.g. packaged snacks, instant noodles, fast food, soft drinks, flavoured chips)?", options: ["Multiple times a day", "Once a day", "A few times a week", "Rarely or never"], scores: [0, 1, 2, 3] },
+  { text: "Do you include a variety of different plant foods each week?", options: ["I eat the same few foods most weeks", "Some variety but mostly similar meals", "Moderate variety — around 10–20 plant types", "High variety — 20+ different plant types a week"], scores: [0, 1, 2, 3] },
+  { text: "How much water do you drink on a typical day?", options: ["Less than 4 cups (1 litre)", "About 4–6 cups", "7–8 cups", "8+ cups (2+ litres)"], scores: [0, 1, 2, 3] },
+  { text: "How often do you eat nuts or seeds?", options: ["Rarely or never", "A few times a week", "Daily in small amounts", "Daily in good portions"], scores: [0, 1, 2, 3] },
+  { text: "How would you describe your fruit intake?", options: ["I rarely eat fruit", "About 1 serve a day", "About 2 serves a day", "3+ varied fruit serves daily"], scores: [0, 1, 2, 3] },
+  { text: "How often do you choose gut-friendly snacks (e.g. fruit, nuts, yoghurt, veggie sticks) over packaged or fried snacks?", options: ["Almost never", "Occasionally", "Most of the time", "Almost always"], scores: [0, 1, 2, 3] }
+];
+
+const results = {
+  rookie: {
+    badge: "Gut Rookie 🌱", badgeClass: "badge-rookie",
+    title: "Your gut needs some love",
+    sub: "Your current eating habits may not be giving your gut microbiome the variety and fibre it needs. The good news — small, consistent changes can make a real difference, and you'll likely notice the impact on your mood and energy within weeks.",
+    tips: [
+      "Start with one extra serve of vegetables per day — add spinach to scrambled eggs or snack on carrot sticks.",
+      "Swap one refined grain for a wholegrain option (e.g. white bread → wholegrain, white rice → brown rice).",
+      "Add a tin of chickpeas or lentils to a soup, stew, or salad this week.",
+      "Reduce soft drinks and packaged snacks — even two fewer servings per week is progress.",
+      "Try the 7-Day Gut Diversity Challenge on this site to start building plant variety.",
+      "Start a 2-week Gut & Mood Diary to spot which foods affect how you feel."
+    ]
+  },
+  intermediate: {
+    badge: "Gut Intermediate 🌿", badgeClass: "badge-intermediate",
+    title: "You're on the right track",
+    sub: "Your diet has some solid gut-friendly foundations — you're including some fibre-rich and varied foods. Focus now on building consistency and adding more diversity, especially fermented foods and legumes.",
+    tips: [
+      "Aim to eat 30 different plant foods per week using the Gut Diversity Tracker on this site.",
+      "Add a fermented food every day — a small pot of plain yoghurt, miso soup, or a sip of kefir.",
+      "Try a new vegetable, legume, or grain each week to diversify your gut bacteria.",
+      "Check for ultra-processed foods sneaking in — even 'healthy-looking' packaged foods can be UPFs.",
+      "Use the 2-week Gut & Mood Diary to spot your personal food–mood patterns.",
+      "Explore the gut-brain axis articles on this site to understand why diet affects your mental health."
+    ]
+  },
+  champion: {
+    badge: "Gut Champion 🏆", badgeClass: "badge-champion",
+    title: "Your gut is thriving!",
+    sub: "Excellent work! Your diet reflects strong gut-health habits — high plant diversity, regular fibre, fermented foods, and low ultra-processed food intake. Keep it up and you're likely benefiting your mental health too.",
+    tips: [
+      "Keep your plant diversity high — use the Gut Diversity Tracker weekly to stay accountable.",
+      "Rotate your fermented foods for extra microbial diversity (e.g. alternate yoghurt, kimchi, kefir, miso).",
+      "Look into prebiotic-rich foods like garlic, leeks, Jerusalem artichokes, and slightly underripe bananas.",
+      "Share your healthy habits — social eating patterns influence the people around you.",
+      "Explore the science behind the gut-brain axis in the articles section of this site.",
+      "Consider tracking your plant diversity over a month to maintain your momentum."
+    ]
+  }
+};
+
+let current = 0, totalScore = 0, selected = null;
+
+function render() {
+  const q = questions[current];
+  document.getElementById('qCounter').textContent = `Question ${current + 1} of ${questions.length}`;
+  const pct = Math.round((current / questions.length) * 100);
+  document.getElementById('qPct').textContent = pct + '%';
+  document.getElementById('barFill').style.width = pct + '%';
+  document.getElementById('qText').textContent = q.text;
+  document.getElementById('btnNext').disabled = true;
+  document.getElementById('btnNext').textContent = current === questions.length - 1 ? 'See my result →' : 'Next →';
+  selected = null;
+  const container = document.getElementById('optionsContainer');
+  container.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option';
+    btn.textContent = opt;
+    btn.onclick = () => {
+      document.querySelectorAll('.option').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selected = i;
+      document.getElementById('btnNext').disabled = false;
+    };
+    container.appendChild(btn);
+  });
+}
+
+function next() {
+  if (selected === null) return;
+  totalScore += questions[current].scores[selected];
+  current++;
+  if (current < questions.length) {
+    render();
+  } else {
+    showResult();
+  }
+}
+
+function showResult() {
+  document.getElementById('quizCard').style.display = 'none';
+  document.getElementById('progressWrap').style.display = 'none';
+  document.getElementById('btnNext').style.display = 'none';
+
+  const max = questions.length * 3;
+  const pct = totalScore / max;
+  const r = pct < 0.4 ? results.rookie : pct < 0.7 ? results.intermediate : results.champion;
+
+  const rc = document.getElementById('resultCard');
+  rc.style.display = 'block';
+  rc.innerHTML = `
+    <span class="result-badge ${r.badgeClass}">${r.badge}</span>
+    <div class="result-title">${r.title}</div>
+    <div class="result-sub">${r.sub}</div>
+    <div class="score-line">Your score: <strong>${totalScore} / ${max}</strong></div>
+    <div class="tips-title">Personalised tips for you</div>
+    <ul class="tips-list">
+      ${r.tips.map(t => `<li><span class="tip-dot">✦</span>${t}</li>`).join('')}
+    </ul>
+    <button class="btn-retry" onclick="restart()">↺ Retake the quiz</button>
+  `;
+}
+
+function restart() {
+  current = 0; totalScore = 0; selected = null;
+  document.getElementById('resultCard').style.display = 'none';
+  document.getElementById('quizCard').style.display = 'block';
+  document.getElementById('progressWrap').style.display = 'block';
+  document.getElementById('btnNext').style.display = 'inline-block';
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
