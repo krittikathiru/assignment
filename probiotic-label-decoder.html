@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Probiotic Label Decoder</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: #f5f7f2; color: #1a1a1a; min-height: 100vh; padding: 2rem 1rem; }
+  .container { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 1.6rem; font-weight: 600; color: #1a3d2b; margin-bottom: 0.25rem; }
+  .subtitle { font-size: 0.9rem; color: #5a7a65; margin-bottom: 1.75rem; line-height: 1.5; }
+  .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 2rem; }
+  .product-card { background: #fff; border: 1.5px solid #d4e6da; border-radius: 16px; padding: 1.1rem 0.75rem; cursor: pointer; transition: all 0.18s; text-align: center; }
+  .product-card:hover { border-color: #4db882; background: #f5fbf7; transform: translateY(-2px); }
+  .product-card.selected { border-color: #2d9e6b; background: #e4f5ec; box-shadow: 0 0 0 3px rgba(45,158,107,0.15); }
+  .prod-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+  .prod-name { font-size: 0.82rem; font-weight: 600; color: #1a3d2b; line-height: 1.3; margin-bottom: 3px; }
+  .prod-type { font-size: 0.72rem; color: #7a9e88; }
+  .product-card.selected .prod-name { color: #0f5c35; }
+  .section { background: #fff; border-radius: 16px; padding: 1.1rem 1.25rem; margin-bottom: 0.75rem; border: 1px solid #e2ede6; }
+  .section-title { font-size: 0.75rem; font-weight: 600; color: #2d9e6b; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.85rem; }
+  .cfu-headline { font-size: 1.2rem; font-weight: 600; color: #1a3d2b; margin-bottom: 0.4rem; }
+  .bar-bg { background: #e8f2ec; border-radius: 999px; height: 10px; overflow: hidden; margin: 6px 0 3px; }
+  .bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #2d9e6b, #1a7a52); }
+  .bar-labels { display: flex; justify-content: space-between; font-size: 0.72rem; color: #a0b8a8; margin-bottom: 0.75rem; }
+  .callout { background: #f0f9f4; border-left: 3px solid #4db882; border-radius: 0 10px 10px 0; padding: 10px 14px; font-size: 0.85rem; color: #2a4a35; line-height: 1.65; }
+  .callout.blue { background: #eef5fb; border-left-color: #5b9fd4; color: #0d2d4a; }
+  .callout.orange { background: #fdf5ee; border-left-color: #e89a5a; color: #4a2a0c; }
+  .strain-row { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid #e8f2ec; }
+  .strain-row:last-child { border-bottom: none; }
+  .strain-info { flex: 1; }
+  .strain-name { font-family: 'Courier New', monospace; font-size: 0.8rem; color: #1a3d2b; font-weight: 600; margin-bottom: 4px; }
+  .strain-text { font-size: 0.83rem; color: #5a7a65; line-height: 1.55; }
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 0.7rem; font-weight: 600; white-space: nowrap; }
+  .badge-good { background: #e4f5ec; color: #04342c; }
+  .badge-mixed { background: #faeeda; color: #412402; }
+  .badge-limited { background: #faece7; color: #4a1b0c; }
+  .empty-state { text-align: center; padding: 3rem 1rem; color: #7a9e88; font-size: 0.9rem; }
+  .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+  .tga-note { font-size: 0.83rem; color: #5a7a65; line-height: 1.65; }
+  .mental-warning { background: #fff8e6; border: 1px solid #f5d888; border-radius: 12px; padding: 1rem; font-size: 0.85rem; color: #5a3a00; line-height: 1.65; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🔬 Probiotic Label Decoder</h1>
+  <p class="subtitle">Select a common Australian probiotic product below to understand what's actually on the label — CFU counts, what the strains do, and what 'mental health support' claims really mean under Australian regulations (TGA/FSANZ).</p>
+
+  <div class="product-grid" id="productGrid"></div>
+  <div id="decodeArea">
+    <div class="empty-state">
+      <div class="empty-icon">👆</div>
+      <div>Select a product above to decode its label</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const products = [
+  {
+    name: "Inner Health Plus", type: "Capsule supplement", icon: "💊",
+    cfu: "30 billion CFU", cfuPct: 82,
+    cfuExplain: "30 billion CFU (colony-forming units) is a high-dose supplement. For general gut health maintenance in healthy adults, research suggests 1–10 billion CFU is often effective. A 30-billion dose is more appropriate for post-antibiotic recovery or specific clinical situations — it's not necessarily 'better' for everyday use.",
+    strains: [
+      { name: "Lactobacillus acidophilus", badge: "good", evidence: "Well-studied strain with strong evidence for reducing IBS symptoms, restoring gut flora after antibiotics, and supporting gut barrier function." },
+      { name: "Bifidobacterium lactis", badge: "good", evidence: "Good evidence for reducing bloating, supporting bowel regularity, and enhancing immune function. One of the most commonly used and studied commercial probiotic strains." }
+    ],
+    mentalClaim: false,
+    tgaCategory: "Listed medicine (Aust L)",
+    tgaNote: "As an Aust L listed medicine, Inner Health Plus has been assessed by the TGA for safety and quality. However, its efficacy claims are self-assessed by the manufacturer — the TGA does not independently verify them for listed products. Always look for the Aust L number on the label."
+  },
+  {
+    name: "Yakult Original", type: "Fermented milk drink", icon: "🥛",
+    cfu: "6.5 billion CFU", cfuPct: 40,
+    cfuExplain: "6.5 billion CFU per bottle sits in the lower-to-moderate range, but this product uses L. casei Shirota — one of the most extensively researched probiotic strains in the world with over 100 clinical trials. A lower CFU count with a well-studied strain often outperforms a high CFU count with poorly researched strains.",
+    strains: [
+      { name: "Lactobacillus casei Shirota", badge: "good", evidence: "Among the most researched probiotic strains globally. Strong evidence for improving bowel frequency and transit time, reducing constipation. Emerging evidence for reducing psychological stress and gut discomfort via the gut-brain axis." }
+    ],
+    mentalClaim: false,
+    tgaCategory: "Food product (FSANZ regulated)",
+    tgaNote: "Yakult is classified as a food in Australia, regulated by Food Standards Australia New Zealand (FSANZ) — not the TGA. Health claims on foods are governed by FSANZ Standard 1.2.7. Claims must be pre-approved and evidence-based. Yakult cannot make therapeutic claims about treating any medical condition."
+  },
+  {
+    name: "Bioceuticals UltraBiotic 45", type: "Practitioner supplement", icon: "🧪",
+    cfu: "45 billion CFU", cfuPct: 95,
+    cfuExplain: "45 billion CFU is a high-dose practitioner-grade product, typically recommended in clinical settings by a naturopath, GP, or dietitian for specific gut conditions. For healthy individuals without a gut condition, this dose exceeds what most research suggests is needed — and more CFU is not always better. Efficacy depends far more on the specific strains than the total count.",
+    strains: [
+      { name: "L. rhamnosus LGG", badge: "good", evidence: "The most studied probiotic strain in the world. Very strong evidence for preventing and treating antibiotic-associated diarrhoea. Emerging research in anxiety and stress models." },
+      { name: "B. longum BB536", badge: "mixed", evidence: "Good evidence for reducing allergy symptoms and hayfever. Mixed evidence for gut symptoms. Small but growing body of research on reducing cortisol and psychological stress." },
+      { name: "L. plantarum 299v", badge: "good", evidence: "Strong evidence for reducing IBS bloating and abdominal pain. Growing research interest in gut-brain effects and mood regulation." }
+    ],
+    mentalClaim: true,
+    tgaCategory: "Registered medicine (Aust R)",
+    tgaNote: "As an Aust R registered medicine, this product has been assessed by the TGA for safety, quality, AND efficacy — the highest level of TGA assessment for complementary medicines. However, no probiotic in Australia currently holds TGA approval to treat, prevent, or cure a mental health condition."
+  },
+  {
+    name: "Swisse Ultibiotics Daily", type: "Daily capsule", icon: "🌿",
+    cfu: "20 billion CFU", cfuPct: 68,
+    cfuExplain: "20 billion CFU is a moderate-to-high dose suitable for daily gut health maintenance. Multi-strain formulas like this one can theoretically support broader microbial diversity, though the benefit depends on which specific strains are included — and whether they survive the journey through stomach acid to reach the gut.",
+    strains: [
+      { name: "L. acidophilus LA-5", badge: "good", evidence: "Well-documented for supporting gut barrier function, reducing IBS symptoms, and improving bowel consistency." },
+      { name: "B. animalis BB-12", badge: "good", evidence: "One of the most studied Bifidobacterium strains. Strong evidence for improving bowel frequency, regularity, and stool consistency." },
+      { name: "L. rhamnosus GG", badge: "good", evidence: "The world's most studied probiotic strain. Strong evidence across antibiotic recovery, diarrhoea prevention, and gut immune support." }
+    ],
+    mentalClaim: true,
+    tgaCategory: "Listed medicine (Aust L)",
+    tgaNote: "As an Aust L listed medicine, Swisse Ultibiotics is safety and quality assessed by the TGA, with manufacturer self-assessed efficacy. Any 'mental wellbeing' or 'stress support' language falls under general level health claims — these are not therapeutic claims and do not indicate this product treats any mental health condition."
+  },
+  {
+    name: "Activia Yoghurt", type: "Functional food", icon: "🍶",
+    cfu: "~1–2 billion CFU", cfuPct: 20,
+    cfuExplain: "While the CFU count is much lower than supplement products, Activia delivers live cultures in a food matrix (yoghurt protein and fat), which may actually enhance bacterial survival through the digestive tract compared to dry capsules. It also provides prebiotic inulin, protein, and calcium — making it a gut-friendly whole-food option rather than just a probiotic vehicle.",
+    strains: [
+      { name: "Bifidobacterium animalis DN-173 010", badge: "good", evidence: "Danone's proprietary strain — one of the most well-researched commercial probiotic strains. Multiple randomised controlled trials (RCTs) support its effectiveness in reducing gut transit time and bloating, particularly in people with IBS." }
+    ],
+    mentalClaim: false,
+    tgaCategory: "Food product (FSANZ regulated)",
+    tgaNote: "Activia is a food regulated by FSANZ, not the TGA. Danone cannot make therapeutic or mental health claims on this product. All gut health marketing claims must comply with FSANZ Standard 1.2.7 and are limited to general level health claims about digestive comfort — not treatment of any condition."
+  }
+];
+
+function render() {
+  const pg = document.getElementById('productGrid');
+  products.forEach((p, i) => {
+    const card = document.createElement('div');
+    card.className = 'product-card';
+    card.id = 'prod-' + i;
+    card.innerHTML = `<div class="prod-icon">${p.icon}</div><div class="prod-name">${p.name}</div><div class="prod-type">${p.type}</div>`;
+    card.onclick = () => {
+      document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      decode(p);
+    };
+    pg.appendChild(card);
+  });
+}
+
+function decode(p) {
+  const area = document.getElementById('decodeArea');
+  const badgeHtml = (b) => {
+    if (b === 'good') return '<span class="badge badge-good">Good evidence</span>';
+    if (b === 'mixed') return '<span class="badge badge-mixed">Mixed evidence</span>';
+    return '<span class="badge badge-limited">Limited evidence</span>';
+  };
+
+  area.innerHTML = `
+    <div class="section">
+      <div class="section-title">🔢 CFU Count — what does it mean?</div>
+      <div class="cfu-headline">${p.cfu}</div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${p.cfuPct}%"></div></div>
+      <div class="bar-labels"><span>Low (&lt;1B)</span><span>Moderate (5–10B)</span><span>High (30B+)</span></div>
+      <div class="callout">${p.cfuExplain}</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">🧬 Strains listed — what does the evidence say?</div>
+      ${p.strains.map(s => `
+        <div class="strain-row">
+          <div class="strain-info">
+            <div class="strain-name">${s.name} ${badgeHtml(s.badge)}</div>
+            <div class="strain-text">${s.evidence}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    ${p.mentalClaim ? `
+    <div class="section">
+      <div class="section-title">🧠 'Mental health support' claims — what do they actually mean?</div>
+      <div class="mental-warning">
+        <strong>Important context:</strong> This product uses language like "supports mental wellbeing" or "stress support." In Australia, this is a <strong>general level health claim</strong> — not a therapeutic claim. The TGA does not permit probiotics to claim they treat, diagnose, prevent, or cure any mental health condition (such as depression or anxiety disorder). These claims relate to non-specific general wellbeing and are self-substantiated by the manufacturer. If you are seeking treatment for a mental health condition, always consult your GP or a registered mental health professional.
+      </div>
+    </div>` : ''}
+
+    <div class="section">
+      <div class="section-title">🛡️ Australian regulatory context — TGA & FSANZ</div>
+      <div style="display:inline-block;background:#e4f5ec;border-radius:999px;padding:4px 14px;font-size:0.78rem;font-weight:600;color:#04342c;margin-bottom:0.75rem;">${p.tgaCategory}</div>
+      <div class="tga-note">${p.tgaNote}</div>
+      <div class="callout blue" style="margin-top:0.75rem;">
+        <strong>Key takeaway:</strong> When buying probiotics in Australia, look for the Aust L or Aust R number on the label — this confirms TGA assessment. Be sceptical of products without this number, very high CFU claims without strain names, or vague mental health language. For food-based probiotics, look for live culture claims backed by named strains with published research.
+      </div>
+    </div>
+  `;
+}
+
+render();
+</script>
+</body>
+</html>
